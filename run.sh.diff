@@ -1,0 +1,32 @@
+--- run.sh	2010-11-14 16:38:11.103584277 +0000
++++ run.sh	2010-11-14 16:51:52.947586693 +0000
+@@ -18,17 +18,26 @@
+ # These settings can be modified to fit the needs of your application
+ # Optimized for use with version 3.5.5 of the Wrapper.
+
++# Freenet auto-install
++export FREENET_CFG="./etc/freenet.ini"
++export FREENET_INST=".install"
++if [ -f "$FREENET_INST" ]; then exec "./bin/1run.sh"; exit; fi
++
+ # Application
+ APP_NAME="@app.name@"
+ APP_LONG_NAME="@app.long.name@"
+
+ # Wrapper
+-WRAPPER_CMD="./wrapper"
+-WRAPPER_CONF="../conf/wrapper.conf"
++WRAPPER_CMD="./bin/wrapper"
++WRAPPER_CONF="./etc/wrapper.conf"
+
+ # Priority at which to run the wrapper.  See "man nice" for valid priorities.
+ #  nice is only used if a priority is specified.
+-PRIORITY=
++#
++# Note that Freenet will scale its usage within the specifed niceness, some
++# threads will have a lower priority (higher nice value) than this. Also please
++# don't renice Freenet once it's started.
++PRIORITY=10
+
+ # Location of the pid file.
+ PIDDIR="."

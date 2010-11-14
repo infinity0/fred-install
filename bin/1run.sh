@@ -1,12 +1,14 @@
 #!/bin/sh
 
+if test -z "$FREENET_CFG" ; then echo "This script is meant to be run from the main run.sh"; exit 1; fi
+
 if test "X`id -u`" = "X0"
 then
         echo "The installer isn\'t meant to be run as root"
 	exit
 fi
 
-if test -f .isInstalled
+if ! test -f "$FREENET_INST"
 then
 	if test -s jvmerror
 	then
@@ -57,7 +59,7 @@ then
 			echo "		IT SHOULDN'T HAPPEN\!"
 			echo ""
 			echo "Make sure your loopback interface is properly configured. Delete Freenet\'s directory and retry."
-			touch .isInstalled
+			rm -f "$FREENET_INST"
 			exit 1
 		fi
 	fi
@@ -78,7 +80,7 @@ echo "fcp.port=$FCP_PORT" >> freenet.ini
 
 echo "Downloading update.sh"
 java $JOPTS -jar bin/sha1test.jar update.sh "." $CAFILE >/dev/null 2>jvmerror
-if test -s jvmerror 
+if test -s jvmerror
 then
 	echo "#################################################################"
 	echo "It seems that you are using a buggy JVM..."
@@ -95,7 +97,7 @@ then
 	echo "The full error message is :"
 	echo "#################################################################"
 	cat jvmerror
-	touch .isInstalled
+	rm -f "$FREENET_INST"
 	exit 1
 fi
 rm -f jvmerror
@@ -152,5 +154,5 @@ echo "Please visit http://127.0.0.1:$FPROXY_PORT/ to configure your node"
 echo "Finished"
 
 rm -f bin/1run.sh
-touch .isInstalled
+rm -f "$FREENET_INST"
 exit 0
