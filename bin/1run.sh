@@ -54,7 +54,8 @@ echo "Detecting tcp-ports availability..."
 FPROXY_PORT=""
 for port in 8888 8889 8899 8999 9999; do
 	if java -jar bin/bindtest.jar $port; then
-		FPROXY_PORT=port
+		FPROXY_PORT=$port
+		break
 	else
 		echo "Could not bind fproxy to TCP port $port..."
 	fi
@@ -71,7 +72,8 @@ echo "fproxy.port=$FPROXY_PORT" >> "$FREENET_CFG"
 FCP_PORT=""
 for port in 9481 9482 9483; do
 	if java -jar bin/bindtest.jar $port; then
-		FCP_PORT=port
+		FCP_PORT=$port
+		break
 	else
 		echo "Could not bind fcp to TCP port $port..."
 	fi
@@ -132,14 +134,15 @@ if test -x `which crontab`; then
 	echo "@reboot   \"$PWD/run.sh\" start 2>&1 >/dev/null #FREENET AUTOSTART - $FPROXY_PORT" >> autostart.install
 	if crontab autostart.install; then
 		sed -i -e "s/8888/$FPROXY_PORT/g" bin/remove_cronjob.sh
-		echo "Installed cron job."
-		echo "You can remove it by running bin/remove_cronjob.sh"
+		echo "Installed cron job; you can remove it by running bin/remove_cronjob.sh"
 	fi
 	if test -s autostart.install; then rm -f autostart.install; fi
 else
 	echo "Cron appears not to be installed."
 	echo "You'll need to run ./run.sh to start Freenet manually after a reboot."
 fi
+
+rm -f "$FREENET_INST"
 
 # Starting the node up
 ./run.sh start
@@ -148,5 +151,4 @@ echo "Please visit http://127.0.0.1:$FPROXY_PORT/ to configure your node"
 echo "Finished"
 
 rm -f "$EXEC_SELF"
-rm -f "$FREENET_INST"
 exit 0
