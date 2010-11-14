@@ -1,5 +1,5 @@
---- freenet/run.sh	2010-11-14 16:38:11.103584277 +0000
-+++ freenet/run.sh	2010-11-14 16:51:52.947586693 +0000
+--- sh.script.in	2010-11-14 16:38:11.103584277 +0000
++++ sh.script.in	2010-11-14 16:51:52.947586693 +0000
 @@ -18,17 +18,26 @@
  # These settings can be modified to fit the needs of your application
  # Optimized for use with version 3.5.5 of the Wrapper.
