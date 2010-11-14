@@ -1,92 +1,93 @@
 #!/bin/sh
 
-if test -z "$FREENET_CFG" ; then echo "This script is meant to be run from the main run.sh"; exit 1; fi
+EXEC_SELF="./bin/1run.sh"
 
-if test "X`id -u`" = "X0"
-then
-        echo "The installer isn\'t meant to be run as root"
-	exit
-fi
+if test -z "$FREENET_CFG"; then echo "This script is meant to be run from the main run.sh"; exit 1; fi
+if test "X`id -u`" = "X0"; then echo "The installer isn\'t meant to be run as root"; exit 1; fi
 
-if ! test -f "$FREENET_INST"
-then
-	if test -s jvmerror
-	then
-		cat jvmerror
-	fi
+if ! test -f "$FREENET_INST"; then
+	if test -s jvmerror; then cat jvmerror; fi
 	echo "IllegalState: Delete the directory and re-unpack a fresh tarball"
+	exit 1
 fi
 
-if test -s freenet.ini
-then
+if test -s "$FREENET_CFG"; then
 	echo "This script isn\'t meant to be used more than once."
-	rm -f bin/1run.sh
-	exit
+	echo "If you really need to do this, first delete $FREENET_CFG"
+	rm -f "$EXEC_SELF"
+	exit 1
 fi
 
-if test ! -s bin/1run.sh
-then
-	echo 'This script should be started using ./bin/1run.sh!'
-	exit
+if test ! -s "$EXEC_SELF"; then
+	echo "This script should be started using $EXEC_SELF!"
+	exit 1
 fi
-
 
 CAFILE="startssl.pem"
 JOPTS="-Djava.net.preferIPv4Stack=true"
 OS="`uname -s`"
 
-# Tweak freenet.ini before the first startup
-echo "node.updater.enabled=true" > freenet.ini
+DIR_LOG="./log/"
+DIR_CFG="./etc/"
+DIR_JAR="./jar/"
+DIR_PLUGIN="./jar/plugins/"
+DIR_TMP="./tmp/"
+
+# Set better directories
+echo "Setting up program directories"
+for i in "$DIR_LOG" "$DIR_CFG" "$DIR_JAR" "$DIR_PLUGIN" "$DIR_TMP"; do mkdir -p "$i"; done
+cat > "$FREENET_CFG" << EOF
+node.pluginDir=$DIR_PLUGIN
+node.tempDir=$DIR_TMP
+node.cfgDir=$DIR_CFG
+logger.dirname=$DIR_LOG
+EOF
+
+# Tweak $FREENET_CFG before the first startup
 echo "Enabling the auto-update feature"
-echo "node.updater.autoupdate=true" >> freenet.ini
+echo "node.updater.enabled=true" >> "$FREENET_CFG"
+echo "node.updater.autoupdate=true" >> "$FREENET_CFG"
 
 echo "Detecting tcp-ports availability..."
+
 # Try to auto-detect the first available port for fproxy
-FPROXY_PORT=8888
-java -jar bin/bindtest.jar $FPROXY_PORT &>/dev/null
-if test $? -ne 0
-then
-	FPROXY_PORT=8889
-	echo "Can not bind fproxy to 8888: let's try $FPROXY_PORT instead."
-	java -jar bin/bindtest.jar $FPROXY_PORT
-	if test $? -ne 0
-	then
-		FPROXY_PORT=9999
-		java -jar bin/bindtest.jar $FPROXY_PORT
-		if test $? -ne 0
-		then
-			echo "Can not bind any socket on 127.0.0.1:"
-			echo "		IT SHOULDN'T HAPPEN\!"
-			echo ""
-			echo "Make sure your loopback interface is properly configured. Delete Freenet\'s directory and retry."
-			rm -f "$FREENET_INST"
-			exit 1
-		fi
+FPROXY_PORT=""
+for port in 8888 8889 8899 8999 9999; do
+	if java -jar bin/bindtest.jar $port; then
+		FPROXY_PORT=port
+	else
+		echo "Could not bind fproxy to TCP port $port..."
 	fi
+done
+if test -z "$FPROXY_PORT"; then
+	echo "Could not find a suitable port to bind on 127.0.0.1."
+	echo "Make sure your loopback interface is properly configured."
+	exit 1
 fi
-echo "fproxy.enabled=true" >> freenet.ini
-echo "fproxy.port=$FPROXY_PORT" >> freenet.ini
+echo "fproxy.enabled=true" >> "$FREENET_CFG"
+echo "fproxy.port=$FPROXY_PORT" >> "$FREENET_CFG"
 
 # Try to auto-detect the first available port for fcp
-FCP_PORT=9481
-java -jar bin/bindtest.jar $FCP_PORT
-if test $? -ne 0
-then
-	FCP_PORT=9482
-	echo "Can not bind fcp to 9481: force it to $FCP_PORT instead."
+FCP_PORT=""
+for port in 9481 9482 9483; do
+	if java -jar bin/bindtest.jar $port; then
+		FCP_PORT=port
+	else
+		echo "Could not bind fcp to TCP port $port..."
+	fi
+done
+if test -n "$FCP_PORT"; then
+	echo "fcp.enabled=true" >> "$FREENET_CFG"
+	echo "fcp.port=$FCP_PORT" >> "$FREENET_CFG"
 fi
-echo "fcp.enabled=true" >> freenet.ini
-echo "fcp.port=$FCP_PORT" >> freenet.ini
 
 echo "Downloading update.sh"
-java $JOPTS -jar bin/sha1test.jar update.sh "." $CAFILE >/dev/null 2>jvmerror
-if test -s jvmerror
-then
+java $JOPTS -jar bin/sha1test.jar update.sh "." "$CAFILE" >/dev/null 2>jvmerror
+if test -s jvmerror; then
 	echo "#################################################################"
-	echo "It seems that you are using a buggy JVM..."
-	echo "Most versions of OpenJDK, and most other fully open source Java implementations have bugs"
-	echo "causing the installer to fail, and/or Freenet to break. Please install Sun Java 1.5 or 1.6"
-	echo "to make the installer work. On ubuntu:"
+	echo "The JVM failed."
+	echo "Some old versions of OpenJDK and other open source Java implementations have bugs. "
+	echo "If you keep running into problems, try installing Sun Java 1.5 or 1.6.  On ubuntu:"
 	echo
 	echo "apt-get install sun-java6-jre"
 	echo "update-java-alternatives -s java-6-sun"
@@ -97,7 +98,6 @@ then
 	echo "The full error message is :"
 	echo "#################################################################"
 	cat jvmerror
-	rm -f "$FREENET_INST"
 	exit 1
 fi
 rm -f jvmerror
@@ -111,40 +111,34 @@ java $JOPTS -jar bin/uncompress.jar wrapper_$OS.zip . 2>&1 >/dev/null
 chmod u+x bin/* lib/*
 
 echo "Downloading freenet-stable-latest.jar"
-java $JOPTS -jar bin/sha1test.jar freenet-stable-latest.jar "." $CAFILE >/dev/null
-ln -s freenet-stable-latest.jar freenet.jar
+java $JOPTS -jar bin/sha1test.jar freenet-stable-latest.jar "$DIR_JAR" "$CAFILE" >/dev/null
+ln -s freenet-stable-latest.jar "$DIR_JAR/freenet.jar"
 echo "Downloading freenet-ext.jar"
-java $JOPTS -jar bin/sha1test.jar freenet-ext.jar "." $CAFILE >/dev/null
+java $JOPTS -jar bin/sha1test.jar freenet-ext.jar "$DIR_JAR" "$CAFILE" >/dev/null
 
 # Register plugins
-mkdir -p plugins
-echo "pluginmanager.loadplugin=JSTUN;UPnP" >> freenet.ini
 echo "Downloading the JSTUN plugin"
-java $JOPTS -jar bin/sha1test.jar JSTUN.jar plugins "$CAFILE" >/dev/null 2>&1
+java $JOPTS -jar bin/sha1test.jar JSTUN.jar "$DIR_PLUGIN" "$CAFILE" >/dev/null 2>&1
 echo "Downloading the UPnP plugin"
-java $JOPTS -jar bin/sha1test.jar UPnP.jar plugins "$CAFILE" >/dev/null 2>&1
+java $JOPTS -jar bin/sha1test.jar UPnP.jar "$DIR_PLUGIN" "$CAFILE" >/dev/null 2>&1
+echo "pluginmanager.loadplugin=JSTUN;UPnP" >> "$FREENET_CFG"
 
 echo "Downloading seednodes.fref"
-java $JOPTS -jar bin/sha1test.jar seednodes.fref "." $CAFILE >/dev/null
+java $JOPTS -jar bin/sha1test.jar seednodes.fref "." "$CAFILE" >/dev/null
 
-if test -x `which crontab`
-then
+if test -x `which crontab`; then
 	echo "Installing cron job to start Freenet on reboot..."
 	crontab -l 2>/dev/null > autostart.install
 	echo "@reboot   \"$PWD/run.sh\" start 2>&1 >/dev/null #FREENET AUTOSTART - $FPROXY_PORT" >> autostart.install
-	if crontab autostart.install
-	then
-		echo Installed cron job.
+	if crontab autostart.install; then
+		sed -i -e "s/8888/$FPROXY_PORT/g" bin/remove_cronjob.sh
+		echo "Installed cron job."
+		echo "You can remove it by running bin/remove_cronjob.sh"
 	fi
-fi
-cat bin/remove_cronjob.sh | sed "s/8888/$FPROXY_PORT/g" > remove_cronjob.sh
-mv remove_cronjob.sh bin/remove_cronjob.sh
-
-if test -s autostart.install
-then
-	rm -f autostart.install
+	if test -s autostart.install; then rm -f autostart.install; fi
 else
-	echo Cron appears not to be installed, you will have to run run.sh start manually to start Freenet after a reboot.
+	echo "Cron appears not to be installed."
+	echo "You'll need to run ./run.sh to start Freenet manually after a reboot."
 fi
 
 # Starting the node up
@@ -153,6 +147,6 @@ fi
 echo "Please visit http://127.0.0.1:$FPROXY_PORT/ to configure your node"
 echo "Finished"
 
-rm -f bin/1run.sh
+rm -f "$EXEC_SELF"
 rm -f "$FREENET_INST"
 exit 0

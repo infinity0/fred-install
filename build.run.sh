@@ -7,3 +7,5 @@ sed -i \
   -e 's/@app.long.name@/Freenet 0.7 (experimental release)/g' \
   -e 's/@app.description@/Freenet reference daemon/g' \
   run.sh
+chmod +x run.sh
+
