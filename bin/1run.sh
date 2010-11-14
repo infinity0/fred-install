@@ -27,19 +27,25 @@ CAFILE="startssl.pem"
 JOPTS="-Djava.net.preferIPv4Stack=true"
 OS="`uname -s`"
 
-DIR_LOG="./log/"
-DIR_CFG="./etc/"
 DIR_JAR="./jar/"
 DIR_PLUGIN="./jar/plugins/"
+DIR_CFG="./etc/"
+DIR_LOG="./log/"
+DIR_NODE="./data/noderef/"
+DIR_RUN="./data/run/"
+DIR_USER="./data/"
 DIR_TMP="./tmp/"
 
 # Set better directories
 echo "Setting up program directories"
-for i in "$DIR_LOG" "$DIR_CFG" "$DIR_JAR" "$DIR_PLUGIN" "$DIR_TMP"; do mkdir -p "$i"; done
+for i in "$DIR_JAR" "$DIR_PLUGIN" "$DIR_CFG" "$DIR_LOG" "$DIR_NODE" "$DIR_RUN" "$DIR_USER" "$DIR_TMP"; do mkdir -p "$i"; done
 cat > "$FREENET_CFG" << EOF
 node.pluginDir=$DIR_PLUGIN
-node.tempDir=$DIR_TMP
 node.cfgDir=$DIR_CFG
+node.nodeDir=$DIR_NODE
+node.runDir=$DIR_RUN
+node.userDir=$DIR_USER
+node.tempDir=$DIR_TMP
 logger.dirname=$DIR_LOG
 EOF
 
@@ -126,7 +132,7 @@ java $JOPTS -jar bin/sha1test.jar UPnP.jar "$DIR_PLUGIN" "$CAFILE" >/dev/null 2>
 echo "pluginmanager.loadplugin=JSTUN;UPnP" >> "$FREENET_CFG"
 
 echo "Downloading seednodes.fref"
-java $JOPTS -jar bin/sha1test.jar seednodes.fref "." "$CAFILE" >/dev/null
+java $JOPTS -jar bin/sha1test.jar seednodes.fref "$DIR_NODE" "$CAFILE" >/dev/null
 
 if test -x `which crontab`; then
 	echo "Installing cron job to start Freenet on reboot..."
