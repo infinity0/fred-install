@@ -89,27 +89,27 @@ if test -n "$FCP_PORT"; then
 	echo "fcp.port=$FCP_PORT" >> "$FREENET_CFG"
 fi
 
-echo "Downloading update.sh"
-java $JOPTS -jar bin/sha1test.jar update.sh "." "$CAFILE" >/dev/null 2>jvmerror
-if test -s jvmerror; then
-	echo "#################################################################"
-	echo "The JVM failed."
-	echo "Some old versions of OpenJDK and other open source Java implementations have bugs. "
-	echo "If you keep running into problems, try installing Sun Java 1.5 or 1.6.  On ubuntu:"
-	echo
-	echo "apt-get install sun-java6-jre"
-	echo "update-java-alternatives -s java-6-sun"
-	echo "#################################################################"
-	echo "You are currently using:"
-	java -version
-	echo "#################################################################"
-	echo "The full error message is :"
-	echo "#################################################################"
-	cat jvmerror
-	exit 1
-fi
-rm -f jvmerror
-chmod a+rx "./update.sh"
+#echo "Downloading update.sh"
+#java $JOPTS -jar bin/sha1test.jar update.sh "." "$CAFILE" >/dev/null 2>jvmerror
+#if test -s jvmerror; then
+#	echo "#################################################################"
+#	echo "The JVM failed."
+#	echo "Some old versions of OpenJDK and other open source Java implementations have bugs. "
+#	echo "If you keep running into problems, try installing Sun Java 1.5 or 1.6.  On ubuntu:"
+#	echo
+#	echo "apt-get install sun-java6-jre"
+#	echo "update-java-alternatives -s java-6-sun"
+#	echo "#################################################################"
+#	echo "You are currently using:"
+#	java -version
+#	echo "#################################################################"
+#	echo "The full error message is :"
+#	echo "#################################################################"
+#	cat jvmerror
+#	exit 1
+#fi
+#rm -f jvmerror
+#chmod a+rx "./update.sh"
 
 echo "Downloading wrapper_$OS.zip"
 java $JOPTS -jar bin/sha1test.jar wrapper_$OS.zip . "$CAFILE" > /dev/null

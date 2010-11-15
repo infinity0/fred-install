@@ -1,0 +1,18 @@
+- update certificate
+- update freenet-install.jar
+
+- files to be potentially updated:
+	jar/*.jar
+	bin/wrapper-etc (platform dependent)
+	lib/wrapper-etc (platform dependent)
+
+- update strategy:
+	- pick a source, either HTTPS or freenet itself
+	- download SHA1SUMS
+	- compare with existing files
+	- if any need to be updated, download them to tmp/get/
+	- if node is up, shut it down
+	- update files
+	- restart node
+
+
